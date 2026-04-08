@@ -1,5 +1,6 @@
 import reflex as rx
 import plotly.graph_objects as go
+from pydantic import BaseModel
 from CRUC_Memory.cbr_engine import cargar_casos, retrieve, reuse, retain, ATRIBUTOS
 from CRUC_Memory.ia_service import explicar_recomendacion
 
@@ -53,7 +54,7 @@ PANEL_2 = "#0F172A"
 BORDER = "rgba(255,255,255,0.10)"
 
 
-class CasoSimilar(rx.Base):
+class CasoSimilar(BaseModel):
     nombre: str
     carrera: str
     distancia_euclidiana: float
@@ -184,6 +185,8 @@ def slider_con_label(label: str, atributo: str, valor):
                 valor[0].to(int),
                 color_scheme="purple",
             ),
+            width="100%",
+            max_width="300px",
         ),
         rx.slider(
             min=1,
@@ -192,8 +195,12 @@ def slider_con_label(label: str, atributo: str, valor):
             default_value=[5],
             on_change=getattr(State, f"set_{atributo}"),
             width="100%",
+            max_width="300px",
+            size="1",
         ),
         width="100%",
+        max_width="300px",
+        margin_x="auto",
         spacing="1",
     )
 
@@ -228,8 +235,37 @@ def tabla_casos():
     )
 
 
+_SLIDER_CSS = """
+.rt-SliderTrack {
+  height: 2px !important;
+  background: rgba(255,255,255,0.12) !important;
+  border-radius: 99px !important;
+}
+.rt-SliderRange {
+  background: #D1A954 !important;
+  border-radius: 99px !important;
+  height: 100% !important;
+}
+.rt-SliderThumb {
+  width: 7px !important;
+  height: 7px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #D1A954 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important;
+  cursor: pointer !important;
+}
+.rt-SliderThumb:hover, .rt-SliderThumb:focus {
+  transform: scale(1.3) !important;
+  outline: none !important;
+}
+"""
+
+
 def index():
-    return rx.box(
+    return rx.fragment(
+        rx.el.style(_SLIDER_CSS),
+        rx.box(
         rx.center(
             rx.box(
                 rx.vstack(
@@ -482,6 +518,7 @@ def index():
         min_height="100vh",
         width="100%",
         padding_x="0px",
+    ),
     )
 
 
