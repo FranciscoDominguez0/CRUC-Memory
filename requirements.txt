@@ -1,2 +1,6 @@
-
 reflex==0.8.28.post1
+pandas
+scipy
+plotly
+google-genai
+python-dotenv
