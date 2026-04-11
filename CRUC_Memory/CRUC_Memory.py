@@ -1,7 +1,6 @@
 import reflex as rx
-import plotly.graph_objects as go
 from pydantic import BaseModel
-from CRUC_Memory.cbr_engine import cargar_casos, retrieve, reuse, retain, ATRIBUTOS
+from CRUC_Memory.cbr_engine import cargar_casos, retrieve, reuse, retain
 from CRUC_Memory.ia_service import explicar_recomendacion
 
 # ── Paleta ────────────────────────────────────────────────────────────────────
@@ -37,10 +36,12 @@ class State(rx.State):
     humanidades:  list[float] = [5]
 
     casos_similares:     list[CasoSimilar] = []
-    carrera_recomendada: str  = ""
-    explicacion_ia:      str  = ""
-    loading:             bool = False
-    caso_retenido:       bool = False
+    similares_raw_cache: list[dict]        = []
+    carrera_recomendada: str               = ""
+    carreras_rechazadas: list[str]         = []
+    explicacion_ia:      str               = ""
+    loading:             bool              = False
+    caso_retenido:       bool              = False
 
     def set_matematica(self, v):   self.matematica   = v
     def set_logica(self, v):       self.logica       = v
@@ -48,97 +49,112 @@ class State(rx.State):
     def set_creatividad(self, v):  self.creatividad  = v
     def set_ciencias(self, v):     self.ciencias     = v
     def set_liderazgo(self, v):    self.liderazgo    = v
-    def set_sociales(self, v):     self.sociales    = v
-    def set_humanidades(self, v):  self.humanidades = v
+    def set_sociales(self, v):     self.sociales     = v
+    def set_humanidades(self, v):  self.humanidades  = v
 
     @property
     def _perfil(self) -> dict:
-        keys = ["matematica", "logica", "comunicacion", "creatividad", "ciencias", "liderazgo"]
+        keys = ["matematica", "logica", "comunicacion", "creatividad",
+                "ciencias", "liderazgo", "sociales", "humanidades"]
         return {k: int(getattr(self, k)[0]) for k in keys}
 
     def consultar(self):
-         self.loading = True
-         self.caso_retenido = False
-         yield
-         df = cargar_casos()
-         similares_raw            = retrieve(self._perfil, df, k=3)        # ← dicts crudos
-         self.casos_similares     = [CasoSimilar(**c) for c in similares_raw]
-         self.carrera_recomendada = reuse(similares_raw)                   # ← pasa dicts
-         self.explicacion_ia      = explicar_recomendacion(
-               self._perfil, self.carrera_recomendada, self.casos_similares
-    )
-         self.loading = False
+        self.loading             = True
+        self.caso_retenido       = False
+        self.carreras_rechazadas = []
+        self.carrera_recomendada = ""
+        self.casos_similares     = []
+        self.explicacion_ia      = ""
+        yield
+        df = cargar_casos()
+        similares_raw = retrieve(self._perfil, df, k=10)
+        self.similares_raw_cache = similares_raw
+        self.carrera_recomendada = reuse(similares_raw, self.carreras_rechazadas)
+        self.casos_similares = [CasoSimilar(**c) for c in similares_raw[:3]]
+        self.explicacion_ia = explicar_recomendacion(
+            self._perfil, self.carrera_recomendada, self.casos_similares
+        )
+        self.loading = False
+
+    def rechazar_y_buscar(self):
+        self.carreras_rechazadas.append(self.carrera_recomendada)
+        self.caso_retenido = False
+        self.loading       = True
+        yield
+        nueva_carrera = reuse(self.similares_raw_cache, self.carreras_rechazadas)
+        self.carrera_recomendada = nueva_carrera
+        casos_nueva = [c for c in self.similares_raw_cache if c["carrera"] == nueva_carrera]
+        otros       = [c for c in self.similares_raw_cache if c["carrera"] != nueva_carrera]
+        self.casos_similares = [CasoSimilar(**c) for c in (casos_nueva + otros)[:3]]
+        self.explicacion_ia = explicar_recomendacion(
+            self._perfil, self.carrera_recomendada, self.casos_similares
+        )
+        self.loading = False
+
+    def reiniciar(self):
+        self.matematica          = [5]
+        self.logica              = [5]
+        self.comunicacion        = [5]
+        self.creatividad         = [5]
+        self.ciencias            = [5]
+        self.liderazgo           = [5]
+        self.sociales            = [5]
+        self.humanidades         = [5]
+        self.casos_similares     = []
+        self.similares_raw_cache = []
+        self.carrera_recomendada = ""
+        self.carreras_rechazadas = []
+        self.explicacion_ia      = ""
+        self.loading             = False
+        self.caso_retenido       = False
 
     def confirmar_y_retener(self):
         retain(self._perfil, self.carrera_recomendada)
         self.caso_retenido = True
 
+    # ── Vars computadas ───────────────────────────────────────────────────────
     @rx.var
-    def grafico_radar(self) -> go.Figure:
-        keys = ["matematica", "logica", "comunicacion", "creatividad", "ciencias", "liderazgo"]
-        vals = [int(getattr(self, k)[0]) for k in keys]
-        fig = go.Figure()
-        fig.add_trace(go.Scatterpolar(
-            r=vals + [vals[0]], theta=ATRIBUTOS + [ATRIBUTOS[0]],
-            fill="toself", name="Tu perfil",
-            line=dict(color=CYAN, width=2),
-            fillcolor="rgba(56,189,248,0.12)",
-        ))
-        if self.casos_similares:
-            v = self.casos_similares[0].vector
-            fig.add_trace(go.Scatterpolar(
-                r=v + [v[0]], theta=ATRIBUTOS + [ATRIBUTOS[0]],
-                fill="toself", name=self.casos_similares[0].nombre,
-                line=dict(color=GREEN, width=1.5, dash="dot"),
-                fillcolor="rgba(52,211,153,0.07)",
-            ))
-        fig.update_layout(
-            polar=dict(
-                bgcolor="rgba(0,0,0,0)",
-                radialaxis=dict(visible=True, range=[0, 10],
-                                gridcolor="#1E2A3A", tickfont=dict(color=MUTED, size=9),
-                                linecolor="#243044"),
-                angularaxis=dict(gridcolor="#1C2840",
-                                 tickfont=dict(color=MUTED2, size=11),
-                                 linecolor="#243044"),
-            ),
-            showlegend=True,
-            legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=MUTED2, size=11),
-                        orientation="h", y=-0.12),
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            margin=dict(l=50, r=50, t=30, b=50),
-            height=360,
-        )
-        return fig
+    def radar_data(self) -> list[dict]:
+        keys   = ["matematica", "logica", "comunicacion", "creatividad",
+                  "ciencias", "liderazgo", "sociales", "humanidades"]
+        labels = ["Matemática", "Lógica", "Comunicación", "Creatividad",
+                  "Ciencias", "Liderazgo", "Social", "Humanidades"]
+        pvals = [int(getattr(self, k)[0]) for k in keys]
+        if not self.casos_similares:
+            return [{"attr": l, "Tú": p} for l, p in zip(labels, pvals)]
+        gvals = self.casos_similares[0].vector
+        return [{"attr": l, "Tú": p, "Graduado": g}
+                for l, p, g in zip(labels, pvals, gvals)]
 
-    # Porcentaje de similitud (0-100) basado en similitud coseno del caso top
     @rx.var
     def pct_similitud(self) -> int:
         if not self.casos_similares:
             return 0
         return int(round(self.casos_similares[0].similitud_coseno * 100))
 
-    # Nivel de coincidencia en texto legible
     @rx.var
     def nivel_match(self) -> str:
         if not self.casos_similares:
             return ""
         pct = self.casos_similares[0].similitud_coseno * 100
-        if pct >= 95:   return "Excelente"
-        if pct >= 85:   return "Muy alto"
-        if pct >= 70:   return "Alto"
-        if pct >= 55:   return "Moderado"
+        if pct >= 95: return "Excelente"
+        if pct >= 85: return "Muy alto"
+        if pct >= 70: return "Alto"
+        if pct >= 55: return "Moderado"
         return "Bajo"
 
-    # Color del nivel
     @rx.var
     def color_match(self) -> str:
         if not self.casos_similares:
             return MUTED
         pct = self.casos_similares[0].similitud_coseno * 100
-        if pct >= 85:   return "#34D399"
-        if pct >= 60:   return "#38BDF8"
-        return "#94A3B8"
+        if pct >= 85: return GREEN
+        if pct >= 60: return CYAN
+        return MUTED2
+
+    @rx.var
+    def puede_rechazar(self) -> bool:
+        return len(self.carreras_rechazadas) < 7
 
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
@@ -147,8 +163,10 @@ GLOBAL_CSS = (
     ".rt-SliderRange{background:#38BDF8!important;height:100%!important;border-radius:99px!important}"
     ".rt-SliderThumb{background:#fff!important;border:2.5px solid #38BDF8!important;"
     "width:13px!important;height:13px!important;border-radius:50%!important;"
-    "box-shadow:0 0 0 3px rgba(56,189,248,0.15)!important;cursor:pointer!important;transition:all .15s!important}"
-    ".rt-SliderThumb:hover{box-shadow:0 0 0 5px rgba(56,189,248,0.25)!important;outline:none!important}"
+    "box-shadow:0 0 0 3px rgba(56,189,248,0.15)!important;cursor:pointer!important;"
+    "transition:all .15s!important}"
+    ".rt-SliderThumb:hover{box-shadow:0 0 0 5px rgba(56,189,248,0.25)!important;"
+    "outline:none!important}"
     "*::-webkit-scrollbar{width:4px}"
     "*::-webkit-scrollbar-track{background:transparent}"
     "*::-webkit-scrollbar-thumb{background:#243044;border-radius:4px}"
@@ -230,7 +248,6 @@ def slider_field(atributo: str, valor) -> rx.Component:
 
 
 def barra_progreso(pct: rx.Var, color: str, height: str = "6px") -> rx.Component:
-    """Barra de progreso visual simple."""
     return rx.box(
         rx.box(
             width=pct.to(str) + "%",
@@ -248,10 +265,8 @@ def barra_progreso(pct: rx.Var, color: str, height: str = "6px") -> rx.Component
 
 
 def fila_graduado(c, posicion: int) -> rx.Component:
-    """Fila de tabla amigable con barra visual de coincidencia."""
     pct_var = (c.similitud_coseno * 100 + 0.5).to(int)
     return rx.table.row(
-        # Posicion
         rx.table.cell(
             rx.box(
                 rx.text(str(posicion), size="1", weight="bold", color=MUTED),
@@ -264,7 +279,6 @@ def fila_graduado(c, posicion: int) -> rx.Component:
                 justify_content="center",
             )
         ),
-        # Nombre
         rx.table.cell(
             rx.vstack(
                 rx.text(c.nombre, size="2", weight="medium", color=INK),
@@ -272,16 +286,12 @@ def fila_graduado(c, posicion: int) -> rx.Component:
                 spacing="0", align="start",
             )
         ),
-        # Barra de coincidencia visual
         rx.table.cell(
             rx.vstack(
                 rx.hstack(
                     rx.text("Coincidencia", size="1", color=MUTED),
                     rx.spacer(),
-                    rx.text(
-                        pct_var.to(str) + "%",
-                        size="1", weight="bold", color=CYAN,
-                    ),
+                    rx.text(pct_var.to(str) + "%", size="1", weight="bold", color=CYAN),
                     width="100%",
                 ),
                 barra_progreso(c.similitud_coseno * 100, CYAN, "5px"),
@@ -289,6 +299,39 @@ def fila_graduado(c, posicion: int) -> rx.Component:
                 width="100%",
                 min_width="140px",
             )
+        ),
+    )
+
+
+def grafico_radar() -> rx.Component:
+    """Gráfico radar con rx.recharts — sin dependencias externas."""
+    return seccion(
+        "Tu perfil vs. graduado más similar", "radar",
+        rx.recharts.radar_chart(
+            rx.recharts.radar(
+                data_key="Tú",
+                stroke=CYAN, fill=CYAN, fill_opacity=0.15,
+            ),
+            rx.recharts.radar(
+                data_key="Graduado",
+                stroke=GREEN, fill=GREEN, fill_opacity=0.08,
+                stroke_dasharray="4 2",
+            ),
+            rx.recharts.polar_grid(stroke=BORDER),
+            rx.recharts.polar_angle_axis(
+                data_key="attr",
+                tick={"fill": MUTED2, "fontSize": 11},
+            ),
+            rx.recharts.polar_radius_axis(
+                angle=90, domain=[0, 10],
+                tick={"fill": MUTED, "fontSize": 9},
+            ),
+            rx.recharts.legend(
+                wrapper_style={"color": MUTED2, "fontSize": "11px"},
+            ),
+            data=State.radar_data,
+            width="100%", height=320,
+            cx="50%", cy="50%", outer_radius="75%",
         ),
     )
 
@@ -321,17 +364,13 @@ def seccion_resultados() -> rx.Component:
                         size="8", color=INK, weight="bold",
                         letter_spacing="-0.03em",
                     ),
-                    # Indicador de nivel de match
                     rx.hstack(
                         rx.box(
                             width="8px", height="8px",
                             border_radius="50%",
                             background=State.color_match,
                         ),
-                        rx.text(
-                            "Nivel de coincidencia: ",
-                            size="2", color=MUTED2,
-                        ),
+                        rx.text("Nivel de coincidencia: ", size="2", color=MUTED2),
                         rx.text(
                             State.nivel_match,
                             size="2", weight="bold",
@@ -339,7 +378,7 @@ def seccion_resultados() -> rx.Component:
                         ),
                         rx.text("·", size="2", color=MUTED),
                         rx.text(
-                            State.pct_similitud.to(str) + "% de similitud con el graduado más cercano",
+                            State.pct_similitud.to(str) + "% de similitud",
                             size="2", color=MUTED2,
                         ),
                         spacing="1", align="center",
@@ -354,25 +393,21 @@ def seccion_resultados() -> rx.Component:
                 width="100%",
             ),
 
-            # Analisis IA
+            # Análisis IA
             seccion(
                 "Por qué esta carrera es para ti", "sparkles",
                 rx.text(State.explicacion_ia, size="2", color=MUTED2, line_height="1.8"),
             ),
 
             # Radar
-            seccion(
-                "Tu perfil vs. graduado más similar", "radar",
-                rx.plotly(data=State.grafico_radar, width="100%"),
-            ),
+            grafico_radar(),
 
-            # Tabla amigable
+            # Tabla graduados
             seccion(
                 "Graduados más parecidos a ti", "users",
                 rx.vstack(
                     rx.text(
-                        "El sistema encontró estos 3 graduados exitosos cuyo perfil de habilidades "
-                        "se parece más al tuyo:",
+                        "El sistema encontró estos 3 graduados cuyo perfil se parece más al tuyo:",
                         size="2", color=MUTED, line_height="1.6",
                     ),
                     rx.table.root(
@@ -380,7 +415,7 @@ def seccion_resultados() -> rx.Component:
                             rx.table.row(
                                 rx.table.cell(rx.text("#", size="1", color=MUTED, weight="medium")),
                                 rx.table.cell(rx.text("Graduado / Carrera", size="1", color=MUTED, weight="medium")),
-                                rx.table.cell(rx.text("Qué tan parecido es a ti", size="1", color=MUTED, weight="medium")),
+                                rx.table.cell(rx.text("Coincidencia", size="1", color=MUTED, weight="medium")),
                             ),
                             fila_graduado(State.casos_similares[0], 1),
                             fila_graduado(State.casos_similares[1], 2),
@@ -392,28 +427,83 @@ def seccion_resultados() -> rx.Component:
                 ),
             ),
 
-            # Boton retener
+            # Botones de acción — todos con disabled en vez de loading
             rx.cond(
                 ~State.caso_retenido,
-                rx.button(
-                    rx.icon("bookmark-check", size=14),
-                    "Esta es mi carrera — guardar mi perfil",
-                    on_click=State.confirmar_y_retener,
-                    size="3", width="100%",
-                    color_scheme="sky",
-                    variant="outline",
-                    border_radius="8px",
-                    cursor="pointer",
+                rx.vstack(
+                    rx.cond(
+                        State.puede_rechazar,
+                        rx.button(
+                            rx.icon("x-circle", size=14),
+                            "No me convence — ver otra opción",
+                            on_click=State.rechazar_y_buscar,
+                            disabled=State.loading,
+                            size="3", width="100%",
+                            color_scheme="red",
+                            variant="outline",
+                            border_radius="8px",
+                            cursor="pointer",
+                        ),
+                        rx.box(
+                            rx.text(
+                                "Ya exploraste todas las opciones. "
+                                "Ajusta tus habilidades e intenta de nuevo.",
+                                size="2", color=MUTED, text_align="center",
+                            ),
+                            padding="12px",
+                            border=f"1px solid {BORDER}",
+                            border_radius="8px",
+                            width="100%",
+                        ),
+                    ),
+                    rx.button(
+                        rx.icon("bookmark-check", size=14),
+                        "Esta es mi carrera — guardar mi perfil",
+                        on_click=State.confirmar_y_retener,
+                        disabled=State.loading,
+                        size="3", width="100%",
+                        color_scheme="sky",
+                        variant="outline",
+                        border_radius="8px",
+                        cursor="pointer",
+                    ),
+                    rx.button(
+                        rx.icon("rotate-ccw", size=14),
+                        "Empezar de nuevo",
+                        on_click=State.reiniciar,
+                        disabled=State.loading,
+                        size="2", width="100%",
+                        color_scheme="gray",
+                        variant="ghost",
+                        border_radius="8px",
+                        cursor="pointer",
+                    ),
+                    spacing="2", width="100%",
                 ),
-                rx.hstack(
-                    rx.icon("circle-check", size=15, color=GREEN),
-                    rx.text("Tu perfil fue guardado. ¡Gracias por confirmar!",
-                            size="2", color=GREEN, weight="medium"),
-                    padding="14px 18px",
-                    border=f"1px solid {GREEN}30",
-                    border_radius="8px",
-                    background=GREEN_D,
-                    width="100%", align="center", spacing="2",
+                rx.vstack(
+                    rx.hstack(
+                        rx.icon("circle-check", size=15, color=GREEN),
+                        rx.text(
+                            "¡Tu perfil fue guardado! ¡Mucho éxito en tu carrera!",
+                            size="2", color=GREEN, weight="medium",
+                        ),
+                        padding="14px 18px",
+                        border=f"1px solid {GREEN}30",
+                        border_radius="8px",
+                        background=GREEN_D,
+                        width="100%", align="center", spacing="2",
+                    ),
+                    rx.button(
+                        rx.icon("rotate-ccw", size=14),
+                        "Empezar de nuevo",
+                        on_click=State.reiniciar,
+                        size="2", width="100%",
+                        color_scheme="gray",
+                        variant="ghost",
+                        border_radius="8px",
+                        cursor="pointer",
+                    ),
+                    spacing="2", width="100%",
                 ),
             ),
 
@@ -423,7 +513,7 @@ def seccion_resultados() -> rx.Component:
     )
 
 
-# ── Pagina ────────────────────────────────────────────────────────────────────
+# ── Página ────────────────────────────────────────────────────────────────────
 def index() -> rx.Component:
     return rx.fragment(
         rx.el.style(GLOBAL_CSS),
@@ -435,9 +525,11 @@ def index() -> rx.Component:
                     rx.hstack(
                         rx.hstack(
                             rx.box(
-                                rx.box(width="7px", height="7px",
-                                       border_radius="50%", background=CYAN,
-                                       box_shadow=f"0 0 10px {CYAN}80"),
+                                rx.box(
+                                    width="7px", height="7px",
+                                    border_radius="50%", background=CYAN,
+                                    box_shadow=f"0 0 10px {CYAN}80",
+                                ),
                                 width="28px", height="28px",
                                 border_radius="6px",
                                 border=f"1px solid {BORDER}",
@@ -451,6 +543,16 @@ def index() -> rx.Component:
                         ),
                         rx.spacer(),
                         tag_tech("CBR  ●  activo"),
+                        rx.button(
+                            rx.icon("rotate-ccw", size=13),
+                            "Reiniciar",
+                            on_click=State.reiniciar,
+                            size="1",
+                            color_scheme="gray",
+                            variant="ghost",
+                            border_radius="6px",
+                            cursor="pointer",
+                        ),
                         width="100%", align="center",
                         padding_y="14px",
                         border_bottom=f"1px solid {BORDER}",
@@ -466,7 +568,7 @@ def index() -> rx.Component:
                         ),
                         rx.text(
                             "Ajusta tus habilidades y encontraremos la carrera que mejor "
-                            "encaja con tu perfil, comparándote con graduados exitosos.",
+                            "encaja con tu perfil, comparándote con graduados exitosos del CRUC.",
                             size="2", color=MUTED2, max_width="52ch",
                             line_height="1.7",
                         ),
@@ -497,15 +599,19 @@ def index() -> rx.Component:
                             rx.button(
                                 rx.cond(
                                     State.loading,
-                                    rx.hstack(rx.spinner(size="2"),
-                                              rx.text("Buscando tu carrera ideal..."),
-                                              spacing="2", align="center"),
-                                    rx.hstack(rx.icon("search", size=14),
-                                              rx.text("Encontrar mi carrera"),
-                                              spacing="2", align="center"),
+                                    rx.hstack(
+                                        rx.spinner(size="2"),
+                                        rx.text("Buscando tu carrera ideal..."),
+                                        spacing="2", align="center",
+                                    ),
+                                    rx.hstack(
+                                        rx.icon("search", size=14),
+                                        rx.text("Encontrar mi carrera"),
+                                        spacing="2", align="center",
+                                    ),
                                 ),
                                 on_click=State.consultar,
-                                loading=State.loading,
+                                disabled=State.loading,
                                 size="3", width="100%",
                                 background=CYAN,
                                 color=BG,

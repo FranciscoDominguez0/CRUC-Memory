@@ -27,6 +27,8 @@ Un estudiante tiene el siguiente perfil de habilidades (escala 1-10):
 - Creatividad: {perfil.get('creatividad')}
 - Ciencias: {perfil.get('ciencias')}
 - Liderazgo: {perfil.get('liderazgo')}
+- Vocación Social: {perfil.get('sociales')}
+- Humanidades: {perfil.get('humanidades')}
 
 El sistema CBR encontró estos graduados exitosos similares:
 {casos_texto}
