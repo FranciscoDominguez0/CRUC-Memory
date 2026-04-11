@@ -23,7 +23,7 @@ def retrieve(nuevo_perfil: dict, df: pd.DataFrame, k=3):
             "nombre": row["nombre"],
             "carrera": row["carrera"],
             "distancia_euclidiana": round(dist_euc, 3),
-            "similitud_coseno": round(sim_cos, 4),
+            "similitud_coseno": round(sim_cos, 2),
             "vector": caso_vec.tolist()
         })
     
@@ -34,7 +34,7 @@ def retrieve(nuevo_perfil: dict, df: pd.DataFrame, k=3):
 def reuse(casos_similares: list):
     """Fase 2 — Reutilizar: la carrera del caso más cercano es la sugerencia."""
     caso0 = casos_similares[0]
-    return caso0.carrera if hasattr(caso0, "carrera") else caso0["carrera"]
+    return caso0["carrera"]
 
 def retain(nuevo_perfil: dict, carrera_confirmada: str, ruta="CRUC_Memory/casos.csv"):
     """Fase 4 — Retener: guardar el nuevo caso en la base de datos."""

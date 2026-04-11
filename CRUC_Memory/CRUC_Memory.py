@@ -33,6 +33,8 @@ class State(rx.State):
     creatividad:  list[float] = [5]
     ciencias:     list[float] = [5]
     liderazgo:    list[float] = [5]
+    sociales:     list[float] = [5]
+    humanidades:  list[float] = [5]
 
     casos_similares:     list[CasoSimilar] = []
     carrera_recomendada: str  = ""
@@ -46,6 +48,8 @@ class State(rx.State):
     def set_creatividad(self, v):  self.creatividad  = v
     def set_ciencias(self, v):     self.ciencias     = v
     def set_liderazgo(self, v):    self.liderazgo    = v
+    def set_sociales(self, v):     self.sociales    = v
+    def set_humanidades(self, v):  self.humanidades = v
 
     @property
     def _perfil(self) -> dict:
@@ -53,16 +57,17 @@ class State(rx.State):
         return {k: int(getattr(self, k)[0]) for k in keys}
 
     def consultar(self):
-        self.loading = True
-        self.caso_retenido = False
-        yield
-        df = cargar_casos()
-        self.casos_similares     = [CasoSimilar(**c) for c in retrieve(self._perfil, df, k=3)]
-        self.carrera_recomendada = reuse(self.casos_similares)
-        self.explicacion_ia      = explicar_recomendacion(
-            self._perfil, self.carrera_recomendada, self.casos_similares
-        )
-        self.loading = False
+         self.loading = True
+         self.caso_retenido = False
+         yield
+         df = cargar_casos()
+         similares_raw            = retrieve(self._perfil, df, k=3)        # ← dicts crudos
+         self.casos_similares     = [CasoSimilar(**c) for c in similares_raw]
+         self.carrera_recomendada = reuse(similares_raw)                   # ← pasa dicts
+         self.explicacion_ia      = explicar_recomendacion(
+               self._perfil, self.carrera_recomendada, self.casos_similares
+    )
+         self.loading = False
 
     def confirmar_y_retener(self):
         retain(self._perfil, self.carrera_recomendada)
@@ -156,6 +161,8 @@ SLIDER_ICONOS = {
     "creatividad":  "pen-tool",
     "ciencias":     "atom",
     "liderazgo":    "users",
+    "sociales":     "heart-handshake",
+    "humanidades":  "book-open",
 }
 
 SLIDER_LABELS = {
@@ -165,6 +172,8 @@ SLIDER_LABELS = {
     "creatividad":  "Creatividad",
     "ciencias":     "Ciencias",
     "liderazgo":    "Liderazgo",
+    "sociales":     "Vocación Social",
+    "humanidades":  "Humanidades",
 }
 
 
@@ -240,7 +249,7 @@ def barra_progreso(pct: rx.Var, color: str, height: str = "6px") -> rx.Component
 
 def fila_graduado(c, posicion: int) -> rx.Component:
     """Fila de tabla amigable con barra visual de coincidencia."""
-    pct_var = (c.similitud_coseno * 100).to(int)
+    pct_var = (c.similitud_coseno * 100 + 0.5).to(int)
     return rx.table.row(
         # Posicion
         rx.table.cell(
@@ -480,6 +489,8 @@ def index() -> rx.Component:
                                 slider_field("creatividad",  State.creatividad),
                                 slider_field("ciencias",     State.ciencias),
                                 slider_field("liderazgo",    State.liderazgo),
+                                slider_field("sociales",     State.sociales),
+                                slider_field("humanidades",  State.humanidades),
                                 columns="2", spacing="5", width="100%",
                             ),
                             rx.box(height="4px"),

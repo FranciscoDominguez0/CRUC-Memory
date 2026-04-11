@@ -1,14 +1,71 @@
-nombre,matematica,logica,comunicacion,creatividad,ciencias,liderazgo,carrera
-Ana López,9,8,6,5,9,7,Ingeniería en Sistemas
-Carlos Ruiz,8,9,5,4,9,6,Ingeniería Civil
-María Torres,5,6,9,8,4,9,Administración de Empresas
-Luis Herrera,7,8,7,6,8,8,Ingeniería Industrial
-Sofía Pérez,4,5,9,9,3,8,Diseño Gráfico
-Pedro Mora,9,9,6,5,8,5,Ingeniería en Sistemas
-Carmen Díaz,6,7,8,7,5,9,Administración de Empresas
-Roberto Salas,8,7,5,4,9,6,Ingeniería Civil
-Valentina Cruz,5,6,9,8,4,7,Diseño Gráfico
-Andrés Núñez,7,8,8,6,7,9,Ingeniería Industrial
-Nuevo_11,9,8,3,4,4,6,Ingeniería en Sistemas
-Nuevo_12,6,4,7,9,5,6,Diseño Gráfico
-Nuevo_13,7,7,8,6,7,6,Ingeniería Industrial
+nombre,matematica,logica,comunicacion,creatividad,ciencias,liderazgo,sociales,humanidades,carrera
+Carlos Mendoza,7,8,7,5,5,8,5,6,Lic. en Administración de Empresas
+Luisa Batista,6,7,8,6,4,9,6,5,Lic. en Administración de Empresas
+Diana Ríos,5,6,9,8,3,8,5,5,Lic. en Admón. de Mercadeo Promoción y Venta
+Rodrigo Pinto,6,6,9,7,3,7,5,4,Lic. en Admón. de Mercadeo Promoción y Venta
+Fernanda Solís,5,6,8,6,4,9,8,5,Lic. en Administración de Recursos Humanos
+Marco Herrera,4,5,9,5,3,8,9,6,Lic. en Administración de Recursos Humanos
+Patricia Núñez,7,8,7,4,4,7,4,5,Lic. en Contabilidad
+Ernesto Campos,8,8,6,3,4,6,3,4,Lic. en Contabilidad
+Valeria Mora,7,8,7,5,5,8,4,5,Lic. en Ingeniería y Operaciones Logística Empresarial
+Iván Castillo,8,8,6,4,6,7,4,4,Lic. en Ingeniería y Operaciones Logística Empresarial
+Rosario Delgado,5,7,8,5,3,8,7,8,Lic. en Administración Pública
+Tomás Espino,4,6,9,4,3,9,7,8,Lic. en Administración Pública
+Camila Reyes,5,7,8,4,3,7,6,8,Lic. en Administración Pública Aduanera
+Héctor Vargas,6,7,7,4,4,7,6,7,Lic. en Administración Pública Aduanera
+Andrea Fuentes,3,4,9,6,4,7,10,8,Lic. en Trabajo Social
+Sebastián Ureña,3,5,8,5,4,6,10,7,Lic. en Trabajo Social
+Melissa Arce,5,5,9,7,5,8,9,6,Lic. en Educación Primaria
+David Quirós,4,5,9,7,4,8,9,6,Lic. en Educación Primaria
+Natalia Brenes,4,4,8,8,4,7,10,6,Lic. en Educación Preescolar
+Felipe Rojas,3,4,8,8,4,7,10,5,Lic. en Educación Preescolar
+Alejandra Mora,4,5,9,6,5,7,9,7,Lic. en Educación con Esp. en Orientación Educativa y Profesional
+Cristian Vega,4,5,9,5,4,7,9,7,Lic. en Educación con Esp. en Orientación Educativa y Profesional
+Gabriela León,5,6,8,7,6,6,8,6,Lic. en Psicopedagogía
+Andrés Salinas,4,6,8,6,5,6,9,6,Lic. en Psicopedagogía
+Paola Jiménez,5,5,9,7,4,7,8,6,Profesorado en Educación
+Luis Picado,4,5,8,7,4,7,8,6,Profesorado en Educación
+Tatiana Blanco,5,5,9,6,5,7,7,6,Profesorado en Educación Media Diversificada
+Roberto Chaves,5,6,8,5,6,7,7,6,Profesorado en Educación Media Diversificada
+Mariela Fonseca,9,9,5,4,8,5,3,4,Lic. en Matemáticas
+José Alvarado,9,9,4,3,8,4,3,4,Lic. en Matemáticas
+Karina Solano,8,9,7,4,7,7,4,5,Docencia en Matemática
+Emilio Ruiz,8,8,7,4,7,6,5,5,Docencia en Matemática
+Lucía Pereira,6,7,6,6,9,5,5,5,Lic. en Ciencias y Tecnología de Alimentos
+Jorge Méndez,7,7,5,5,9,5,4,4,Lic. en Ciencias y Tecnología de Alimentos
+Sofía Guerrero,5,6,7,6,9,6,6,6,Lic. en Recursos Naturales y Ambiente
+Óscar Navarro,5,6,6,7,9,5,6,7,Lic. en Recursos Naturales y Ambiente
+Carmen Hidalgo,6,7,6,5,9,5,5,5,Lic. en Biología
+Rafael Torres,5,7,6,6,9,4,5,5,Lic. en Biología
+Daniela Castro,7,8,6,4,9,5,4,5,Lic. en Docencia de la Química
+Marcos Aguilar,7,8,5,4,9,5,4,4,Lic. en Docencia de la Química
+Valentina Cruz,8,9,8,6,7,7,5,8,Lic. en Derecho y Ciencias Políticas
+Alejandro Mora,7,9,9,5,6,8,6,9,Lic. en Derecho y Ciencias Políticas
+Ingrid Soto,7,8,7,5,9,6,7,5,Lic. en Farmacia
+Bruno Varela,7,9,6,4,9,6,6,4,Lic. en Farmacia
+Ana Sequeira,5,7,8,5,9,6,9,5,Lic. en Enfermería
+Mario Cordero,4,6,8,5,9,6,9,5,Lic. en Enfermería
+Rebeca Solís,8,8,7,6,7,8,5,6,Lic. en Finanzas y Banca
+Gerardo Pérez,8,8,6,5,6,7,4,5,Lic. en Finanzas y Banca
+Stephanie Arias,5,6,8,7,8,6,8,5,Técnico en Asistencia Odontológica
+Kevin Montero,5,6,7,6,8,5,8,4,Técnico en Asistencia Odontológica
+Beatriz Ramírez,4,5,7,7,6,5,5,10,Lic. en Geografía e Historia
+Guillermo Salas,4,5,6,6,6,5,5,9,Lic. en Geografía e Historia
+Valeria Herrera,5,5,9,8,4,7,7,8,Lic. en Turismo Alternativo
+Diego Bolaños,4,5,9,8,5,7,8,7,Lic. en Turismo Alternativo
+Isabella Chacón,3,4,9,9,3,5,5,9,Lic. en Español
+Mauricio Lobo,3,4,9,8,3,5,5,9,Lic. en Español
+Cindy Obando,4,5,9,7,3,6,6,9,Lic. en Inglés
+Raúl Esquivel,4,5,8,7,3,6,5,8,Lic. en Inglés
+Priscilla Durán,6,5,8,8,5,7,6,6,Lic. en Educación Física
+Jonathan Calvo,7,5,7,7,6,7,6,5,Lic. en Educación Física
+Mayela Ugalde,7,8,7,6,5,7,5,5,Lic. en Informática para la Gestión Educativa y Empresarial
+Darío Zamora,7,8,6,5,5,7,5,5,Lic. en Informática para la Gestión Educativa y Empresarial
+Fabiola Madrigal,9,9,6,5,7,6,3,4,Lic. en Ingeniería Informática
+Esteban Quirós,9,9,5,4,7,5,3,3,Lic. en Ingeniería Informática
+Natasha Porras,7,7,8,7,4,8,5,5,Lic. en Gerencia en Comercio Electrónico
+Rodrigo Ulate,6,7,8,7,4,8,5,5,Lic. en Gerencia en Comercio Electrónico
+Adriana Segura,3,4,8,10,3,5,5,7,Lic. en Bellas Artes con Especialización en Música
+Tomás Arroyo,3,3,8,10,3,5,5,6,Lic. en Bellas Artes con Especialización en Música
+Mariana Vindas,7,7,6,7,9,7,6,6,Ing. Agroforestal
+Pablo Esquivel,7,7,5,6,9,7,5,5,Ing. Agroforestal
